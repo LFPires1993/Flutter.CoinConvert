@@ -1,9 +1,19 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/painting.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert' as convert;
 
-main() {
-  runApp(MaterialApp(
+import 'fragments/converter.fragment.dart';
+
+const String url = 'https://api.hgbrasil.com/finance?key=94520e03';
+final client = http.Client();
+
+Future<Map> getData() async {
+  http.Response response = await client.get(Uri.parse(url));
+  return convert.jsonDecode(response.body)['results']['currencies'];
+}
+
+main() async {
+  runApp(const MaterialApp(
     debugShowCheckedModeBanner: false,
     home: AppHome(),
   ));
@@ -14,154 +24,38 @@ class AppHome extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const double defaultHeight = 20.0;
-    return const Scaffold(
+    return Scaffold(
       backgroundColor: Colors.black,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: EdgeInsets.all(16.0),
-            child: Center(
-              child: Column(
-                children: [
-                  Icon(
-                    Icons.monetization_on,
-                    color: Colors.yellowAccent,
-                    size: 200,
-                  ),
-                  Text(
-                    'Conversor de moedas!',
-                    style: TextStyle(fontSize: 30, color: Colors.yellowAccent),
-                  ),
-                  SizedBox(height: defaultHeight),
-                  TextField(
-                    keyboardType: TextInputType.number,
-                    cursorColor: Colors.yellowAccent,
-                    decoration: InputDecoration(
-                      focusedBorder: OutlineInputBorder(
-                          borderSide: BorderSide(
-                              color: Colors.yellowAccent,
-                          )
-                      ),
-                      border: OutlineInputBorder(
-                        borderSide: BorderSide(
-                          color: Colors.yellowAccent,
-                        )
-                      ),
-                      labelText: 'Real',
-                      labelStyle: TextStyle(
-                        fontSize: 20,
-                        color: Colors.yellowAccent
-                      ),
-                      prefixText: 'R\$ ',
-                      prefixStyle: TextStyle(
-                        color: Colors.yellowAccent,
-                        fontSize: 20
-                      )
-                    ),
+      body: FutureBuilder<Map>(
+        future: getData(),
+        builder: (context, snapshot) {
+          switch (snapshot.connectionState) {
+            case ConnectionState.none:
+            case ConnectionState.waiting:
+              return const Center(
+                child: CircularProgressIndicator(
+                  strokeAlign: 10,
+                  strokeWidth: 15,
+                  strokeCap: StrokeCap.round,
+                  color: Colors.yellowAccent,
+                ),
+              );
+            default:
+              if (snapshot.hasError) {
+                return Center(
+                  child: Text(
+                    'Erro ao carregar dados: ${snapshot.error}',
                     style: TextStyle(
+                      fontSize: 28,
                       color: Colors.yellowAccent,
-                      fontSize: 25
                     ),
                   ),
-                  SizedBox(height: defaultHeight),
-                  TextField(
-                    keyboardType: TextInputType.number,
-                    cursorColor: Colors.yellowAccent,
-                    decoration: InputDecoration(
-                        focusedBorder: OutlineInputBorder(
-                            borderSide: BorderSide(
-                                color: Colors.yellowAccent,
-                            )
-                        ),
-                        border: OutlineInputBorder(
-                            borderSide: BorderSide(
-                                color: Colors.yellowAccent,
-                            )
-                        ),
-                        labelText: 'Dolar',
-                        labelStyle: TextStyle(
-                            fontSize: 20,
-                            color: Colors.yellowAccent
-                        ),
-                        prefixText: '\$ ',
-                        prefixStyle: TextStyle(
-                            color: Colors.yellowAccent,
-                            fontSize: 20
-                        )
-                    ),
-                    style: TextStyle(
-                        color: Colors.yellowAccent,
-                        fontSize: 25
-                    ),
-                  ),
-                  SizedBox(height: defaultHeight),
-                  TextField(
-                    keyboardType: TextInputType.number,
-                    cursorColor: Colors.yellowAccent,
-                    decoration: InputDecoration(
-                        focusedBorder: OutlineInputBorder(
-                            borderSide: BorderSide(
-                                color: Colors.yellowAccent,
-                            )
-                        ),
-                        border: OutlineInputBorder(
-                            borderSide: BorderSide(
-                                color: Colors.yellowAccent,
-                            )
-                        ),
-                        labelText: 'Euro',
-                        labelStyle: TextStyle(
-                            fontSize: 20,
-                            color: Colors.yellowAccent
-                        ),
-                        prefixText: '€ ',
-                        prefixStyle: TextStyle(
-                            color: Colors.yellowAccent,
-                            fontSize: 20
-                        )
-                    ),
-                    style: TextStyle(
-                        color: Colors.yellowAccent,
-                        fontSize: 25
-                    ),
-                  ),
-                  SizedBox(height: defaultHeight),
-                  TextField(
-                    keyboardType: TextInputType.number,
-                    cursorColor: Colors.yellowAccent,
-                    decoration: InputDecoration(
-                        focusedBorder: OutlineInputBorder(
-                            borderSide: BorderSide(
-                                color: Colors.yellowAccent,
-                            )
-                        ),
-                        border: OutlineInputBorder(
-                            borderSide: BorderSide(
-                                color: Colors.yellowAccent,
-                            )
-                        ),
-                        labelText: 'Bitcoin',
-                        labelStyle: TextStyle(
-                            fontSize: 20,
-                            color: Colors.yellowAccent
-                        ),
-                        prefixText: '₿ ',
-                        prefixStyle: TextStyle(
-                            color: Colors.yellowAccent,
-                            fontSize: 20
-                        )
-                    ),
-                    style: TextStyle(
-                        color: Colors.yellowAccent,
-                        fontSize: 25
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
+                );
+              } else {
+                return ConverterFragment(data: snapshot.data!);
+              }
+          }
+        },
       ),
     );
   }
